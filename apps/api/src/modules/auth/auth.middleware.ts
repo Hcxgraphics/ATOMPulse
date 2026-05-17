@@ -1,6 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
-import { UnauthorizedError, ForbiddenError } from '../shared/errors';
+import { UnauthorizedError, ForbiddenError } from '../../shared/errors';
 
 export interface AuthUser {
   userId: string;
