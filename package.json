@@ -18,7 +18,13 @@
     "setup": "npm install && npm run db:migrate && npm run db:seed"
   },
   "devDependencies": {
+    "@typescript-eslint/eslint-plugin": "^8.59.3",
+    "@typescript-eslint/parser": "^8.59.3",
+    "eslint": "^8.57.1",
     "prettier": "^3.2.5",
     "turbo": "^2.0.0"
+  },
+  "eslintConfig": {
+    "root": true
   }
 }
