@@ -3,6 +3,7 @@
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useAuthStore } from "@/lib/store";
+import { hasRoleAccess } from "@/lib/access";
 
 type AllowedRole = "EMPLOYEE" | "MANAGER_L1" | "ADMIN_HR" | "SUPER_ADMIN";
 
@@ -16,7 +17,7 @@ export function useRequireAuth(allowedRoles?: AllowedRole[]) {
       router.replace("/login");
       return;
     }
-    if (allowedRoles && !allowedRoles.includes(user.role as AllowedRole)) {
+    if (allowedRoles && !hasRoleAccess(user.role, allowedRoles)) {
       router.replace("/dashboard");
     }
   }, [allowedRoles, accessToken, router, user]);

@@ -14,7 +14,7 @@
 ---
 
 ## 🚀 Live Demo
-**URL:** [https://atompulse-demo.render.com](https://atompulse-demo.render.com) (Placeholder)
+**URL:** [https://atompulse-demo.render.com](https://atompulse-demo.render.com)
 
 ### Demo Credentials (All Passwords: `AtomPulse@2025`)
 | Role | Email | Use Case |

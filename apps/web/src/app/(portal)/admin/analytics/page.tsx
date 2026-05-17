@@ -3,6 +3,7 @@
 
 import React from "react";
 import { ChartIcon, ClockIcon, PageHeader, Panel, Pill, StatCard, TargetIcon, UsersIcon } from "@/components/ui-shell";
+import { InfoTooltip } from "@/components/info-tooltip";
 import apiClient, { getApiErrorMessage } from "@/lib/apiClient";
 import { useRequireAuth } from "@/hooks/useRequireAuth";
 
@@ -51,10 +52,10 @@ export default function AnalyticsPage() {
       {error && <div className="mb-4 rounded-lg border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive">{error}</div>}
       <div className="mb-4 flex flex-wrap gap-2">{["overview", "distribution", "trends", "managers"].map((item) => <button key={item} className={`btn ${tab === item ? "btn-primary" : "btn-secondary"}`} onClick={() => setTab(item)}>{item}</button>)}<button className="btn btn-secondary" onClick={() => downloadReport("csv")}>Export CSV</button><button className="btn btn-secondary" onClick={() => downloadReport("xlsx")}>Export XLSX</button></div>
       <div className="mb-8 grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        <StatCard label="Employees" value={overview?.totalEmployees ?? 0} sublabel="In selected cycle" accent="primary" icon={<UsersIcon />} />
-        <StatCard label="Submitted" value={overview?.submitted ?? 0} sublabel="Goal sheets" accent="success" icon={<TargetIcon />} />
-        <StatCard label="Approved" value={overview?.approved ?? 0} sublabel="Locked/aligned" accent="warning" icon={<ClockIcon />} />
-        <StatCard label="Avg Progress" value={<span>{Math.round(overview?.avgProgressScore || 0)}<span className="text-2xl text-muted-foreground/70">%</span></span>} sublabel="Check-in score" accent="violet" icon={<ChartIcon />} />
+        <StatCard label="Employees" value={overview?.totalEmployees ?? 0} sublabel={<span className="inline-flex items-center gap-2">In selected cycle <InfoTooltip label="Employee count help" content="This count reflects active users in the selected cycle and is intended to match the working population seen in the goal and check-in workflows." /></span>} accent="primary" icon={<UsersIcon />} />
+        <StatCard label="Submitted" value={overview?.submitted ?? 0} sublabel={<span className="inline-flex items-center gap-2">Goal sheets <InfoTooltip label="Submitted sheets help" content="Submitted sheets are those awaiting or completed manager review. They are the main numerator in completion dashboards." /></span>} accent="success" icon={<TargetIcon />} />
+        <StatCard label="Approved" value={overview?.approved ?? 0} sublabel={<span className="inline-flex items-center gap-2">Locked/aligned <InfoTooltip label="Approved sheets help" content="Approved sheets are locked for editing and count toward governance completion. They should match the cycle approval traceability rules." /></span>} accent="warning" icon={<ClockIcon />} />
+        <StatCard label="Avg Progress" value={<span>{Math.round(overview?.avgProgressScore || 0)}<span className="text-2xl text-muted-foreground/70">%</span></span>} sublabel={<span className="inline-flex items-center gap-2">Check-in score <InfoTooltip label="Average progress help" content="Average progress combines quarter check-in progress values across active goals and is used to visualize delivery momentum at a glance." /></span>} accent="violet" icon={<ChartIcon />} />
       </div>
 
       {tab === "overview" && <Panel><h2 className="mb-4 text-xl font-semibold">Department Completion</h2><div className="table-shell"><table><thead><tr><th>Department</th><th>Employees</th><th>Submitted</th><th>Approved</th><th>Avg Score</th></tr></thead><tbody>{overview?.byDepartment?.map((d: any) => <tr key={d.departmentId}><td>{d.departmentName}</td><td>{d.totalEmployees}</td><td>{d.submitted}</td><td>{d.approved}</td><td>{Math.round(d.avgScore)}%</td></tr>)}</tbody></table></div></Panel>}

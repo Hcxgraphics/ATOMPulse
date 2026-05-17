@@ -3,6 +3,7 @@
 
 import React from "react";
 import { PageHeader, Panel, Pill, TargetIcon } from "@/components/ui-shell";
+import { InfoTooltip } from "@/components/info-tooltip";
 import apiClient, { getApiErrorMessage } from "@/lib/apiClient";
 import { useRequireAuth } from "@/hooks/useRequireAuth";
 
@@ -218,7 +219,7 @@ export default function GoalsPage() {
           <Panel className="mb-8">
             <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
               <div>
-                <div className="text-sm font-semibold">Total Weightage</div>
+                <div className="flex items-center gap-2 text-sm font-semibold">Total Weightage <InfoTooltip label="Total weightage guidance" content="Goal sheets must total 100%. Each goal must be at least 10%, and locked sheets cannot be edited after approval." /></div>
                 <div className="mt-1 text-xs text-muted-foreground">{submitHint || "Ready to submit."}</div>
               </div>
               <div className={`font-mono text-lg font-bold ${totalWeightage === 100 ? "text-success" : totalWeightage > 100 ? "text-destructive" : "text-foreground"}`}>{totalWeightage}% / 100%</div>
@@ -241,7 +242,7 @@ export default function GoalsPage() {
                       {isLocked && <Pill tone="success">Locked</Pill>}
                     </div>
                     <div className="grid gap-2 text-sm text-muted-foreground sm:grid-cols-2">
-                      <p><span className="text-foreground">UOM:</span> {goal.uomType?.name || goal.uomTypeId}</p>
+                      <p className="flex items-center gap-2"><span className="text-foreground">UOM:</span> {goal.uomType?.name || goal.uomTypeId} <InfoTooltip label="UOM formula help" content="UOM types define how progress is scored. Min and Max compare actuals against targets, Timeline maps delivery checkpoints, and Zero-based checks for completion states." /></p>
                       <p><span className="text-foreground">Target:</span> {goal.targetValue}</p>
                     </div>
                     <p className="mt-4 max-w-2xl text-sm leading-6 text-muted-foreground">{goal.description || "No description provided."}</p>

@@ -3,6 +3,7 @@
 
 import React from "react";
 import { CheckIcon, ClockIcon, PageHeader, Panel, Pill, StatCard } from "@/components/ui-shell";
+import { InfoTooltip } from "@/components/info-tooltip";
 import apiClient, { getApiErrorMessage } from "@/lib/apiClient";
 import { useRequireAuth } from "@/hooks/useRequireAuth";
 
@@ -138,9 +139,9 @@ export default function CheckinsPage() {
       </div>
 
       <div className="mb-8 grid grid-cols-1 gap-4 sm:grid-cols-3">
-        <StatCard label="Open Items" value={Math.max(0, goals.length - completedValues)} sublabel={windowOpen ? "Window open" : "Window closed"} accent="warning" icon={<ClockIcon />} />
-        <StatCard label="Submitted" value={submitted ? "Yes" : "No"} sublabel={submitted ? "Awaiting review" : "Draft"} accent="primary" icon={<CheckIcon />} />
-        <StatCard label="Avg Progress" value={<span>{Math.round(checkins.reduce((sum, item) => sum + (item.progressScore || 0), 0) / (checkins.length || 1))}<span className="text-2xl text-muted-foreground/70">%</span></span>} sublabel="Across active goals" accent="teal" icon={<CheckIcon />} />
+        <StatCard label={<span className="inline-flex items-center gap-2">Open Items <InfoTooltip label="Open items help" content="Open items are goals that still need a planned or actual value. They remain editable only while the quarter window is active." /></span>} value={Math.max(0, goals.length - completedValues)} sublabel={windowOpen ? "Window open" : "Window closed"} accent="warning" icon={<ClockIcon />} />
+        <StatCard label={<span className="inline-flex items-center gap-2">Submitted <InfoTooltip label="Submitted check-in help" content="Submitted check-ins are locked for the quarter and routed to manager review. They can no longer be autosaved until returned or reopened by governance." /></span>} value={submitted ? "Yes" : "No"} sublabel={submitted ? "Awaiting review" : "Draft"} accent="primary" icon={<CheckIcon />} />
+        <StatCard label={<span className="inline-flex items-center gap-2">Avg Progress <InfoTooltip label="Average progress help" content="Average progress is a simple score across the active quarter. It reflects actual performance versus planned values after UOM scoring rules are applied." /></span>} value={<span>{Math.round(checkins.reduce((sum, item) => sum + (item.progressScore || 0), 0) / (checkins.length || 1))}<span className="text-2xl text-muted-foreground/70">%</span></span>} sublabel="Across active goals" accent="teal" icon={<CheckIcon />} />
       </div>
 
       {!windowOpen && <Panel className="mb-5 border-warning/30 bg-warning/10">This check-in window is closed. Contact your admin to enable late submission.</Panel>}
@@ -163,7 +164,7 @@ export default function CheckinsPage() {
               <div className="grid gap-4 sm:grid-cols-3">
                 <label className="text-sm">Planned<input type="number" className="field mt-2 w-full" defaultValue={checkin?.plannedValue ?? goal.targetValue} disabled={!windowOpen || submitted} onBlur={(e) => saveCheckin(goal, { plannedValue: Number(e.target.value) })} /></label>
                 <label className="text-sm">Actual<input type="number" className="field mt-2 w-full" defaultValue={actual ?? ""} disabled={!windowOpen || submitted} onBlur={(e) => saveCheckin(goal, { actualValue: e.target.value === "" ? null : Number(e.target.value) })} /></label>
-                <label className="text-sm">Status<select className="field mt-2 w-full" value={checkin?.status || "NOT_STARTED"} disabled={!windowOpen || submitted} onChange={(e) => saveCheckin(goal, { status: e.target.value })}><option value="NOT_STARTED">Not Started</option><option value="ON_TRACK">On Track</option><option value="COMPLETED">Completed</option></select></label>
+                <label className="text-sm">Status <InfoTooltip label="Check-in status help" content="Not Started means the goal has no update yet, On Track indicates the quarter is progressing normally, and Completed means the actual value meets the expected outcome." /><select className="field mt-2 w-full" value={checkin?.status || "NOT_STARTED"} disabled={!windowOpen || submitted} onChange={(e) => saveCheckin(goal, { status: e.target.value })}><option value="NOT_STARTED">Not Started</option><option value="ON_TRACK">On Track</option><option value="COMPLETED">Completed</option></select></label>
               </div>
             </Panel>
           );

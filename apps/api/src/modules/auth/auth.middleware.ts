@@ -1,6 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
 import { UnauthorizedError, ForbiddenError } from '../../shared/errors';
+import { hasPermission } from './access';
 
 export interface AuthUser {
   userId: string;
@@ -33,7 +34,7 @@ export const verifyToken = (req: Request, res: Response, next: NextFunction) => 
 
 export const requirePermission = (permission: string) => {
   return (req: Request, res: Response, next: NextFunction) => {
-    if (!req.user || !req.user.permissions.includes(permission)) {
+    if (!req.user || !hasPermission(req.user.role, req.user.permissions, permission)) {
       throw new ForbiddenError(`Requires permission: ${permission}`);
     }
     next();

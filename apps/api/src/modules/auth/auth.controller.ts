@@ -3,6 +3,7 @@ import { prisma } from '../../shared/prisma';
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 import { UnauthorizedError } from '../../shared/errors';
+import { getEffectivePermissions } from './access';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'your-super-secret-key-min-32-chars';
 
@@ -34,7 +35,10 @@ export const login = async (req: Request, res: Response) => {
   
   if (user.status !== 'ACTIVE') throw new UnauthorizedError('Account is inactive');
 
-  const permissions = user.role.permissions.map((rp: any) => rp.permission.permissionKey);
+  const permissions = getEffectivePermissions(
+    user.role.roleName,
+    user.role.permissions.map((rp: any) => rp.permission.permissionKey)
+  );
   
   const payload = {
     userId: user.id,
@@ -73,7 +77,10 @@ export const refresh = async (req: Request, res: Response) => {
     });
     if (!user || user.status !== 'ACTIVE') throw new UnauthorizedError('Invalid refresh token');
 
-    const permissions = user.role.permissions.map((rp: any) => rp.permission.permissionKey);
+    const permissions = getEffectivePermissions(
+      user.role.roleName,
+      user.role.permissions.map((rp: any) => rp.permission.permissionKey)
+    );
     const payload = { userId: user.id, role: user.role.roleName, permissions };
     const token = jwt.sign(payload, JWT_SECRET, { expiresIn: '7d' });
 
@@ -110,7 +117,10 @@ export const me = async (req: Request, res: Response) => {
     name: user.name,
     email: user.email,
     role: user.role.roleName,
-    permissions: user.role.permissions.map((rp: any) => rp.permission.permissionKey),
+    permissions: getEffectivePermissions(
+      user.role.roleName,
+      user.role.permissions.map((rp: any) => rp.permission.permissionKey)
+    ),
     departmentId: user.departmentId
   });
 };

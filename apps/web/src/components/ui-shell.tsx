@@ -6,6 +6,7 @@ import { usePathname, useRouter } from "next/navigation";
 import React from "react";
 import { useAuthStore } from "@/lib/store";
 import apiClient from "@/lib/apiClient";
+import { hasRoleAccess } from "@/lib/access";
 
 type NavItem = {
   href: string;
@@ -109,7 +110,7 @@ export function PortalChrome({ children }: { children: React.ReactNode }) {
   const visibleGroups = navGroups
     .map((group) => ({
       ...group,
-      items: group.items.filter((item) => !item.roles || item.roles.includes(user.role)),
+      items: group.items.filter((item) => !item.roles || hasRoleAccess(user.role, item.roles)),
     }))
     .filter((group) => group.items.length > 0);
 
@@ -135,10 +136,10 @@ export function PortalChrome({ children }: { children: React.ReactNode }) {
   };
 
   const quickActions = [
-    { label: "Add New Goal", show: user.role === "EMPLOYEE", action: () => router.push("/goals") },
-    { label: "View Pending Approvals", show: ["MANAGER_L1", "ADMIN_HR", "SUPER_ADMIN"].includes(user.role), action: () => router.push("/team") },
-    { label: "Export Achievement Report", show: ["ADMIN_HR", "SUPER_ADMIN"].includes(user.role), action: () => router.push("/admin/analytics") },
-    { label: "View Audit Logs", show: ["ADMIN_HR", "SUPER_ADMIN"].includes(user.role), action: () => router.push("/admin/audit") },
+    { label: "Add New Goal", show: hasRoleAccess(user.role, ["EMPLOYEE"]), action: () => router.push("/goals") },
+    { label: "View Pending Approvals", show: hasRoleAccess(user.role, ["MANAGER_L1", "ADMIN_HR", "SUPER_ADMIN"]), action: () => router.push("/team") },
+    { label: "Export Achievement Report", show: hasRoleAccess(user.role, ["ADMIN_HR", "SUPER_ADMIN"]), action: () => router.push("/admin/analytics") },
+    { label: "View Audit Logs", show: hasRoleAccess(user.role, ["ADMIN_HR", "SUPER_ADMIN"]), action: () => router.push("/admin/audit") },
   ].filter((item) => item.show);
 
   return (
@@ -344,7 +345,7 @@ export function StatCard({
   accent = "primary",
   icon,
 }: {
-  label: string;
+  label: React.ReactNode;
   value: React.ReactNode;
   sublabel?: React.ReactNode;
   accent?: "primary" | "teal" | "violet" | "warning" | "success" | "destructive";
