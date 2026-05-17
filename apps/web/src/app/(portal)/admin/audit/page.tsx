@@ -1,7 +1,9 @@
 "use client";
+/* eslint-disable react-hooks/set-state-in-effect */
 
 import React from "react";
 import { useAuthStore } from "@/lib/store";
+import { useRequireAuth } from "@/hooks/useRequireAuth";
 import { LockIcon, PageHeader, Panel, Pill, ScrollIcon, ShieldIcon, StatCard, TargetIcon, UserCogIcon } from "@/components/ui-shell";
 
 type AuditLog = {
@@ -32,6 +34,7 @@ function auditIcon(entityType: string) {
 }
 
 export default function AuditPage() {
+  useRequireAuth(["ADMIN_HR", "SUPER_ADMIN"]);
   const token = useAuthStore(state => state.token);
   const [events, setEvents] = React.useState<AuditLog[]>([]);
   const [loading, setLoading] = React.useState(true);

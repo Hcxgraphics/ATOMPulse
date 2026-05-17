@@ -1,7 +1,9 @@
 "use client";
+/* eslint-disable react-hooks/set-state-in-effect */
 
 import React from "react";
 import { useAuthStore } from "@/lib/store";
+import { useRequireAuth } from "@/hooks/useRequireAuth";
 import { AlertIcon, ArrowIcon, ClockIcon, PageHeader, Panel, Pill, ShieldIcon, StatCard } from "@/components/ui-shell";
 
 type Escalation = {
@@ -25,6 +27,7 @@ function formatDate(value: string) {
 }
 
 export default function EscalationsPage() {
+  useRequireAuth(["ADMIN_HR", "SUPER_ADMIN"]);
   const token = useAuthStore(state => state.token);
   const [rows, setRows] = React.useState<Escalation[]>([]);
   const [loading, setLoading] = React.useState(true);
@@ -146,6 +149,9 @@ export default function EscalationsPage() {
                       </button>
                       <button className="btn btn-secondary min-h-8 px-2 text-xs" onClick={() => updateEscalation(row.id, "resolve")} disabled={row.status !== "PENDING"}>
                         Resolve
+                      </button>
+                      <button className="btn min-h-8 border-border/70 bg-white/[0.04] px-2 text-xs text-muted-foreground" onClick={() => confirm("Dismiss this escalation? It will be marked as resolved with no further action.") && updateEscalation(row.id, "dismiss")} disabled={row.status !== "PENDING"}>
+                        Dismiss
                       </button>
                     </div>
                   </td>

@@ -1,160 +1,66 @@
 "use client";
+/* eslint-disable @typescript-eslint/no-explicit-any, react-hooks/set-state-in-effect */
 
 import React from "react";
 import { ChartIcon, ClockIcon, PageHeader, Panel, Pill, StatCard, TargetIcon, UsersIcon } from "@/components/ui-shell";
-
-const trend = [
-  { m: "Jan", v: 42 },
-  { m: "Feb", v: 51 },
-  { m: "Mar", v: 58 },
-  { m: "Apr", v: 64 },
-  { m: "May", v: 68 },
-  { m: "Jun", v: 72 },
-];
-
-const donut = [
-  { name: "Revenue", value: 32, color: "var(--primary)" },
-  { name: "Operations", value: 24, color: "var(--teal)" },
-  { name: "People", value: 18, color: "var(--violet)" },
-  { name: "Customer", value: 14, color: "var(--success)" },
-  { name: "Innovation", value: 12, color: "var(--warning)" },
-];
-
-const managers = [
-  { name: "A. Mehta", rate: 94 },
-  { name: "S. Iyer", rate: 88 },
-  { name: "R. Kapoor", rate: 81 },
-  { name: "M. Singh", rate: 76 },
-  { name: "T. Chen", rate: 68 },
-  { name: "L. Park", rate: 54 },
-];
-
-const departments = [
-  ["Sales", 82],
-  ["Ops", 66],
-  ["Product", 74],
-  ["People", 59],
-  ["CX", 88],
-  ["Engineering", 71],
-] as const;
+import apiClient, { getApiErrorMessage } from "@/lib/apiClient";
+import { useRequireAuth } from "@/hooks/useRequireAuth";
 
 export default function AnalyticsPage() {
+  useRequireAuth(["ADMIN_HR", "SUPER_ADMIN"]);
+  const [cycles, setCycles] = React.useState<any[]>([]);
+  const [cycleId, setCycleId] = React.useState("");
+  const [quarter, setQuarter] = React.useState("Q2");
+  const [overview, setOverview] = React.useState<any>(null);
+  const [distribution, setDistribution] = React.useState<any>(null);
+  const [trends, setTrends] = React.useState<any[]>([]);
+  const [managers, setManagers] = React.useState<any[]>([]);
+  const [tab, setTab] = React.useState("overview");
+  const [error, setError] = React.useState<string | null>(null);
+
+  React.useEffect(() => {
+    apiClient.get("/admin/cycles").then(({ data }) => {
+      setCycles(data);
+      setCycleId(data.find((c: any) => c.status === "OPEN" || c.status === "CHECKIN_OPEN")?.id || data[0]?.id || "");
+    }).catch((err) => setError(getApiErrorMessage(err, "Failed to load cycles")));
+  }, []);
+
+  React.useEffect(() => {
+    if (!cycleId) return;
+    Promise.all([
+      apiClient.get("/analytics/completion-rates", { params: { cycleId, quarter } }),
+      apiClient.get("/analytics/goal-distribution", { params: { cycleId } }),
+      apiClient.get("/analytics/qoq-trends", { params: { cycleId } }),
+      apiClient.get("/analytics/manager-effectiveness", { params: { cycleId } }),
+    ]).then(([o, d, t, m]) => {
+      setOverview(o.data); setDistribution(d.data); setTrends(t.data.trends); setManagers(m.data.managers);
+    }).catch((err) => setError(getApiErrorMessage(err, "Failed to load analytics")));
+  }, [cycleId, quarter]);
+
+  const downloadReport = async (format: "csv" | "xlsx") => {
+    const response = await apiClient.get("/export/achievement-report", { params: { format, cycleId, quarter }, responseType: "blob" });
+    const url = URL.createObjectURL(response.data);
+    const a = document.createElement("a");
+    a.href = url; a.download = `atompulse-analytics-${quarter}.${format}`; a.click();
+    URL.revokeObjectURL(url);
+  };
+
   return (
     <div>
-      <PageHeader
-        eyebrow="Admin intelligence"
-        title="Analytics Dashboard"
-        description="Org-wide goal completion rates, trends, distribution, and manager effectiveness."
-        actions={
-          <>
-            <select className="field">
-              <option>2026 Annual Goals</option>
-            </select>
-            <select className="field">
-              <option>Q2</option>
-              <option>Q1</option>
-            </select>
-          </>
-        }
-      />
-
+      <PageHeader eyebrow="Admin intelligence" title="Analytics Dashboard" description="Org-wide goal completion rates, trends, distribution, and manager effectiveness." actions={<><select className="field" value={cycleId} onChange={(e) => setCycleId(e.target.value)}>{cycles.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}</select><select className="field" value={quarter} onChange={(e) => setQuarter(e.target.value)}><option>Q1</option><option>Q2</option><option>Q3</option><option value="Q4_ANNUAL">Q4</option></select></>} />
+      {error && <div className="mb-4 rounded-lg border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive">{error}</div>}
+      <div className="mb-4 flex flex-wrap gap-2">{["overview", "distribution", "trends", "managers"].map((item) => <button key={item} className={`btn ${tab === item ? "btn-primary" : "btn-secondary"}`} onClick={() => setTab(item)}>{item}</button>)}<button className="btn btn-secondary" onClick={() => downloadReport("csv")}>Export CSV</button><button className="btn btn-secondary" onClick={() => downloadReport("xlsx")}>Export XLSX</button></div>
       <div className="mb-8 grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        <StatCard label="Org Completion" value={<span>72.4<span className="text-2xl text-muted-foreground/70">%</span></span>} sublabel={<span className="text-success">+4.2% from Q1</span>} accent="primary" icon={<ChartIcon />} />
-        <StatCard label="On-Track Goals" value="1,402" sublabel="68% of total" accent="success" icon={<TargetIcon />} />
-        <StatCard label="Pending Check-ins" value="340" sublabel="Due in 5 days" accent="warning" icon={<ClockIcon />} />
-        <StatCard label="Goals / Employee" value="4.2" sublabel="Optimal range: 4-6" accent="violet" icon={<UsersIcon />} />
+        <StatCard label="Employees" value={overview?.totalEmployees ?? 0} sublabel="In selected cycle" accent="primary" icon={<UsersIcon />} />
+        <StatCard label="Submitted" value={overview?.submitted ?? 0} sublabel="Goal sheets" accent="success" icon={<TargetIcon />} />
+        <StatCard label="Approved" value={overview?.approved ?? 0} sublabel="Locked/aligned" accent="warning" icon={<ClockIcon />} />
+        <StatCard label="Avg Progress" value={<span>{Math.round(overview?.avgProgressScore || 0)}<span className="text-2xl text-muted-foreground/70">%</span></span>} sublabel="Check-in score" accent="violet" icon={<ChartIcon />} />
       </div>
 
-      <Panel className="mb-6">
-        <div className="mb-6 flex items-center justify-between gap-4">
-          <div>
-            <h2 className="text-xl font-semibold">Completion Trend</h2>
-            <p className="mt-1 text-sm text-muted-foreground">Monthly org-wide completion rate</p>
-          </div>
-          <Pill tone="primary">Completion %</Pill>
-        </div>
-        <div className="flex h-72 items-end gap-3 rounded-xl border border-border/70 bg-black/10 p-4">
-          {trend.map((point) => (
-            <div key={point.m} className="flex h-full flex-1 flex-col justify-end gap-3">
-              <div className="relative flex flex-1 items-end">
-                <div
-                  className="w-full rounded-t-xl bg-gradient-to-t from-primary to-teal shadow-[0_0_30px_oklch(0.62_0.24_268/0.25)]"
-                  style={{ height: `${point.v}%` }}
-                />
-                <span className="absolute -top-1 left-1/2 -translate-x-1/2 font-mono text-[10px] text-muted-foreground">{point.v}%</span>
-              </div>
-              <div className="text-center font-mono text-xs text-muted-foreground">{point.m}</div>
-            </div>
-          ))}
-        </div>
-      </Panel>
-
-      <div className="mb-6 grid gap-6 lg:grid-cols-2">
-        <Panel>
-          <h2 className="text-xl font-semibold">Goal Distribution</h2>
-          <p className="mt-1 text-sm text-muted-foreground">By thrust area</p>
-          <div className="mt-6 grid gap-6 sm:grid-cols-[220px_1fr] sm:items-center">
-            <div
-              className="mx-auto h-52 w-52 rounded-full"
-              style={{
-                background: "conic-gradient(var(--primary) 0 32%, var(--teal) 32% 56%, var(--violet) 56% 74%, var(--success) 74% 88%, var(--warning) 88% 100%)",
-              }}
-            >
-              <div className="grid h-full place-items-center rounded-full p-10">
-                <div className="grid h-full w-full place-items-center rounded-full bg-card text-center">
-                  <div>
-                    <div className="font-mono text-3xl font-semibold">5</div>
-                    <div className="text-xs text-muted-foreground">Areas</div>
-                  </div>
-                </div>
-              </div>
-            </div>
-            <div className="space-y-3">
-              {donut.map((item) => (
-                <div key={item.name} className="flex items-center justify-between gap-4 text-sm">
-                  <div className="flex items-center gap-2">
-                    <span className="h-2.5 w-2.5 rounded-full" style={{ background: item.color }} />
-                    {item.name}
-                  </div>
-                  <span className="font-mono text-muted-foreground">{item.value}%</span>
-                </div>
-              ))}
-            </div>
-          </div>
-        </Panel>
-
-        <Panel>
-          <h2 className="text-xl font-semibold">Manager Effectiveness</h2>
-          <p className="mt-1 text-sm text-muted-foreground">Check-in approval rate</p>
-          <div className="mt-6 space-y-4">
-            {managers.map((manager) => (
-              <div key={manager.name} className="grid grid-cols-[84px_1fr_44px] items-center gap-3">
-                <div className="truncate text-sm">{manager.name}</div>
-                <div className="h-3 overflow-hidden rounded-full bg-muted">
-                  <div className="h-full rounded-full bg-gradient-to-r from-primary to-teal" style={{ width: `${manager.rate}%` }} />
-                </div>
-                <div className="text-right font-mono text-xs text-muted-foreground">{manager.rate}%</div>
-              </div>
-            ))}
-          </div>
-        </Panel>
-      </div>
-
-      <Panel>
-        <h2 className="text-xl font-semibold">Completion Heatmap</h2>
-        <p className="mt-1 text-sm text-muted-foreground">By department</p>
-        <div className="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-          {departments.map(([name, value]) => (
-            <div key={name} className="rounded-xl border border-border/70 bg-white/[0.04] p-4">
-              <div className="mb-3 flex items-center justify-between">
-                <span className="text-sm font-semibold">{name}</span>
-                <span className="font-mono text-xs text-muted-foreground">{value}%</span>
-              </div>
-              <div className="h-24 rounded-lg" style={{ background: `linear-gradient(135deg, oklch(0.62 0.24 268 / ${value / 130}), oklch(0.78 0.15 195 / ${value / 160}))` }} />
-            </div>
-          ))}
-        </div>
-      </Panel>
+      {tab === "overview" && <Panel><h2 className="mb-4 text-xl font-semibold">Department Completion</h2><div className="table-shell"><table><thead><tr><th>Department</th><th>Employees</th><th>Submitted</th><th>Approved</th><th>Avg Score</th></tr></thead><tbody>{overview?.byDepartment?.map((d: any) => <tr key={d.departmentId}><td>{d.departmentName}</td><td>{d.totalEmployees}</td><td>{d.submitted}</td><td>{d.approved}</td><td>{Math.round(d.avgScore)}%</td></tr>)}</tbody></table></div></Panel>}
+      {tab === "distribution" && <div className="grid gap-6 lg:grid-cols-2"><Panel><h2 className="text-xl font-semibold">By Thrust Area</h2><div className="mt-5 space-y-3">{distribution?.byThrustArea?.map((item: any) => <div key={item.thrustAreaName}><div className="mb-1 flex justify-between text-sm"><span>{item.thrustAreaName}</span><span>{item.count}</span></div><div className="h-3 rounded-full bg-muted"><div className="h-full rounded-full bg-primary" style={{ width: `${Math.min(100, item.count * 12)}%` }} /></div></div>)}</div></Panel><Panel><h2 className="text-xl font-semibold">By UOM Type</h2><div className="mt-5 space-y-3">{distribution?.byUomType?.map((item: any) => <div key={item.uomTypeName} className="flex items-center justify-between"><span>{item.uomTypeName}</span><Pill tone="primary">{item.onTrack} on track / {item.completed} done</Pill></div>)}</div></Panel></div>}
+      {tab === "trends" && <Panel><h2 className="mb-5 text-xl font-semibold">QoQ Trends</h2><div className="space-y-4">{trends.map((row) => <div key={row.departmentName} className="grid grid-cols-[140px_1fr] gap-3"><div>{row.departmentName}</div><div className="grid grid-cols-4 gap-2">{["q1Score","q2Score","q3Score","q4Score"].map((q) => <div key={q} className="rounded-lg bg-white/[0.04] p-3 text-center font-mono text-xs">{Math.round(row[q] || 0)}%</div>)}</div></div>)}</div></Panel>}
+      {tab === "managers" && <Panel><h2 className="mb-5 text-xl font-semibold">Manager Effectiveness</h2><div className="space-y-4">{managers.map((m) => <div key={m.managerId} className="grid grid-cols-[160px_1fr_56px] items-center gap-3"><div>{m.managerName}</div><div className="h-3 rounded-full bg-muted"><div className="h-full rounded-full bg-gradient-to-r from-destructive to-teal" style={{ width: `${m.completionRate}%` }} /></div><div className="font-mono text-xs">{Math.round(m.completionRate)}%</div></div>)}</div></Panel>}
     </div>
   );
 }

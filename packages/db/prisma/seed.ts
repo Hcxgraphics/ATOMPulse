@@ -33,11 +33,47 @@ async function main() {
     'PUSH_SHARED_GOAL', 'VIEW_AUDIT_LOGS', 'MANAGE_USERS', 'EXPORT_REPORTS'
   ];
   
+  const allPermissions = [];
   for (const p of permissionsList) {
-    await prisma.permission.upsert({
+    const permission = await prisma.permission.upsert({
       where: { permissionKey: p },
       update: {},
       create: { permissionKey: p, description: p.replace('_', ' ') }
+    });
+    allPermissions.push(permission);
+  }
+
+  const permissionMap = Object.fromEntries(allPermissions.map((p) => [p.permissionKey, p.id]));
+  const rolePermissionAssignments = [
+    { roleName: 'EMPLOYEE', keys: ['CREATE_GOAL', 'SUBMIT_GOAL', 'LOG_CHECKIN'] },
+    {
+      roleName: 'MANAGER_L1',
+      keys: [
+        'CREATE_GOAL', 'SUBMIT_GOAL', 'APPROVE_GOAL', 'RETURN_GOAL',
+        'LOG_CHECKIN', 'VIEW_TEAM_GOALS', 'VIEW_ANALYTICS',
+        'PUSH_SHARED_GOAL', 'VIEW_AUDIT_LOGS',
+      ],
+    },
+    {
+      roleName: 'ADMIN_HR',
+      keys: [
+        'CREATE_GOAL', 'SUBMIT_GOAL', 'APPROVE_GOAL', 'RETURN_GOAL',
+        'UNLOCK_GOAL', 'LOG_CHECKIN', 'VIEW_TEAM_GOALS', 'VIEW_ANALYTICS',
+        'MANAGE_CYCLES', 'PUSH_SHARED_GOAL', 'VIEW_AUDIT_LOGS',
+        'MANAGE_USERS', 'EXPORT_REPORTS',
+      ],
+    },
+    { roleName: 'SUPER_ADMIN', keys: Object.keys(permissionMap) },
+  ];
+
+  for (const { roleName, keys } of rolePermissionAssignments) {
+    const role = await prisma.role.findUnique({ where: { roleName } });
+    if (!role) continue;
+    await prisma.rolePermission.createMany({
+      data: keys
+        .filter((key) => permissionMap[key])
+        .map((key) => ({ roleId: role.id, permissionId: permissionMap[key] })),
+      skipDuplicates: true,
     });
   }
 

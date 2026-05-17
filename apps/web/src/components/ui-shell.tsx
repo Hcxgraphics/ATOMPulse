@@ -1,9 +1,11 @@
 "use client";
+/* eslint-disable @typescript-eslint/no-explicit-any, react-hooks/set-state-in-effect */
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import React from "react";
 import { useAuthStore } from "@/lib/store";
+import apiClient from "@/lib/apiClient";
 
 type NavItem = {
   href: string;
@@ -33,6 +35,8 @@ const navGroups: { label: string; items: NavItem[] }[] = [
     items: [
       { href: "/admin/analytics", label: "Analytics", icon: <ChartIcon />, roles: adminRoles },
       { href: "/admin/cycles", label: "Goal Cycles", icon: <CalendarIcon />, roles: adminRoles },
+      { href: "/admin/users", label: "Users", icon: <UserCogIcon />, roles: adminRoles },
+      { href: "/admin/shared-goals", label: "Shared Goals", icon: <TargetIcon />, roles: adminRoles },
       { href: "/admin/escalations", label: "Escalations", icon: <ShieldIcon />, roles: adminRoles },
       { href: "/admin/audit", label: "Audit Logs", icon: <ScrollIcon />, roles: adminRoles },
     ],
@@ -44,6 +48,53 @@ export function PortalChrome({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
   const [open, setOpen] = React.useState(false);
+  const [notificationsOpen, setNotificationsOpen] = React.useState(false);
+  const [notifications, setNotifications] = React.useState<any[]>([]);
+  const [commandOpen, setCommandOpen] = React.useState(false);
+  const [query, setQuery] = React.useState("");
+  const [results, setResults] = React.useState<any[]>([]);
+  const loadNotifications = React.useCallback(async () => {
+    try {
+      const { data } = await apiClient.get("/notifications", { params: { userId: "me", limit: 20 } });
+      setNotifications(data);
+    } catch {
+      setNotifications([]);
+    }
+  }, []);
+
+  React.useEffect(() => {
+    if (!user) return;
+    loadNotifications();
+    const id = window.setInterval(loadNotifications, 30000);
+    return () => window.clearInterval(id);
+  }, [loadNotifications, user]);
+
+  React.useEffect(() => {
+    const onKeyDown = (event: KeyboardEvent) => {
+      if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "k") {
+        event.preventDefault();
+        setCommandOpen(true);
+      }
+      if (event.key === "Escape") setCommandOpen(false);
+    };
+    document.addEventListener("keydown", onKeyDown);
+    return () => document.removeEventListener("keydown", onKeyDown);
+  }, []);
+
+  React.useEffect(() => {
+    const handle = window.setTimeout(async () => {
+      if (query.trim().length < 2) {
+        setResults([]);
+        return;
+      }
+      const [goals, employees] = await Promise.all([
+        apiClient.get("/goal-sheets/search", { params: { q: query } }).catch(() => ({ data: [] })),
+        user?.role !== "EMPLOYEE" ? apiClient.get("/admin/users/search", { params: { q: query } }).catch(() => ({ data: [] })) : Promise.resolve({ data: [] }),
+      ]);
+      setResults([...goals.data.map((item: any) => ({ ...item, group: "Goals" })), ...employees.data.map((item: any) => ({ ...item, group: "People", goalTitle: item.name, employeeName: item.department }))]);
+    }, 300);
+    return () => window.clearTimeout(handle);
+  }, [query, user?.role]);
 
   if (!user) return null;
 
@@ -68,6 +119,27 @@ export function PortalChrome({ children }: { children: React.ReactNode }) {
     logout();
     router.push("/login");
   };
+
+  const unreadCount = notifications.filter((item) => !item.read).length;
+
+  const markAllRead = async () => {
+    await apiClient.patch("/notifications/read-all", { userId: "me" }).catch(() => null);
+    setNotifications((prev) => prev.map((item) => ({ ...item, read: true })));
+  };
+
+  const openNotification = async (notification: any) => {
+    await apiClient.patch(`/notifications/${notification.id}/read`).catch(() => null);
+    setNotifications((prev) => prev.map((item) => item.id === notification.id ? { ...item, read: true } : item));
+    setNotificationsOpen(false);
+    if (notification.link) router.push(notification.link);
+  };
+
+  const quickActions = [
+    { label: "Add New Goal", show: user.role === "EMPLOYEE", action: () => router.push("/goals") },
+    { label: "View Pending Approvals", show: ["MANAGER_L1", "ADMIN_HR", "SUPER_ADMIN"].includes(user.role), action: () => router.push("/team") },
+    { label: "Export Achievement Report", show: ["ADMIN_HR", "SUPER_ADMIN"].includes(user.role), action: () => router.push("/admin/analytics") },
+    { label: "View Audit Logs", show: ["ADMIN_HR", "SUPER_ADMIN"].includes(user.role), action: () => router.push("/admin/audit") },
+  ].filter((item) => item.show);
 
   return (
     <div className="relative min-h-screen overflow-hidden bg-background text-foreground">
@@ -115,14 +187,14 @@ export function PortalChrome({ children }: { children: React.ReactNode }) {
                 <span className="font-medium text-foreground">{current?.label ?? "Workspace"}</span>
               </nav>
               <div className="ml-auto flex items-center gap-2">
-                <div className="hidden h-9 min-w-[220px] items-center gap-2 rounded-lg border border-border/70 bg-white/[0.04] px-3 text-xs text-muted-foreground md:flex">
+                <button className="hidden h-9 min-w-[220px] items-center gap-2 rounded-lg border border-border/70 bg-white/[0.04] px-3 text-left text-xs text-muted-foreground md:flex" onClick={() => setCommandOpen(true)}>
                   <SearchIcon />
                   Search goals, people, cycles
                   <kbd className="ml-auto rounded border border-border/60 px-1.5 py-0.5 font-mono text-[10px]">K</kbd>
-                </div>
-                <button className="icon-button" aria-label="Notifications">
+                </button>
+                <button className="icon-button" aria-label="Notifications" onClick={() => setNotificationsOpen((value) => !value)}>
                   <BellIcon />
-                  <span className="absolute right-2 top-2 h-1.5 w-1.5 rounded-full bg-teal shadow-[0_0_10px_var(--teal)]" />
+                  {unreadCount > 0 && <span className="absolute right-1 top-1 grid h-4 min-w-4 place-items-center rounded-full bg-teal px-1 text-[10px] font-bold text-background">{unreadCount}</span>}
                 </button>
                 <div className="grid h-9 w-9 place-items-center rounded-lg gradient-primary text-xs font-bold text-primary-foreground shadow-glow">
                   {initials}
@@ -130,6 +202,26 @@ export function PortalChrome({ children }: { children: React.ReactNode }) {
               </div>
             </div>
           </header>
+          {notificationsOpen && (
+            <div className="fixed right-4 top-20 z-50 w-[min(380px,calc(100vw-2rem))] rounded-2xl border border-border/80 bg-card p-4 shadow-elevated">
+              <div className="mb-3 flex items-center justify-between"><h2 className="font-semibold">Notifications</h2><button className="btn btn-secondary min-h-8 px-2 text-xs" onClick={markAllRead}>Mark all read</button></div>
+              <div className="max-h-96 space-y-2 overflow-y-auto">
+                {notifications.map((item) => <button key={item.id} className={`w-full rounded-lg border border-border/70 p-3 text-left text-sm ${item.read ? "bg-white/[0.03] text-muted-foreground" : "bg-primary/10"}`} onClick={() => openNotification(item)}><div className="font-semibold text-foreground">{item.title}</div><div className="mt-1 text-xs">{item.message}</div><div className="mt-2 font-mono text-[10px]">{new Date(item.createdAt).toLocaleString()}</div></button>)}
+                {notifications.length === 0 && <div className="p-4 text-center text-sm text-muted-foreground">No notifications yet.</div>}
+              </div>
+            </div>
+          )}
+          {commandOpen && (
+            <div className="fixed inset-0 z-50 bg-black/60 p-4" onClick={() => setCommandOpen(false)}>
+              <div className="mx-auto mt-20 w-full max-w-2xl rounded-2xl border border-border/80 bg-card p-4 shadow-elevated" onClick={(event) => event.stopPropagation()}>
+                <input autoFocus className="field mb-4 w-full" placeholder="Search goals or people..." value={query} onChange={(event) => setQuery(event.target.value)} />
+                <div className="mb-3 text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">Quick Actions</div>
+                <div className="mb-4 grid gap-2 sm:grid-cols-2">{quickActions.map((action) => <button key={action.label} className="btn btn-secondary justify-start" onClick={() => { action.action(); setCommandOpen(false); }}>{action.label}</button>)}</div>
+                {results.length > 0 && <div className="mb-3 text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">Results</div>}
+                <div className="max-h-72 space-y-2 overflow-y-auto">{results.map((result, index) => <button key={`${result.group}-${result.goalId || result.id || index}`} className="w-full rounded-lg border border-border/70 p-3 text-left hover:bg-white/[0.04]" onClick={() => { router.push(result.href || "/dashboard"); setCommandOpen(false); }}><div className="text-xs text-muted-foreground">{result.group}</div><div className="font-semibold">{result.goalTitle}</div><div className="text-sm text-muted-foreground">{result.employeeName}</div></button>)}</div>
+              </div>
+            </div>
+          )}
 
           <main className="flex-1 overflow-y-auto px-4 py-6 sm:px-6 lg:px-10 lg:py-8">
             <div className="mx-auto w-full max-w-[1400px] animate-rise">{children}</div>

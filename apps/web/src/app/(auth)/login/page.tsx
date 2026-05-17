@@ -4,36 +4,45 @@ import React, { useState } from "react";
 import { useAuthStore } from "@/lib/store";
 import { useRouter } from "next/navigation";
 import { SparkIcon } from "@/components/ui-shell";
+import apiClient, { getApiErrorMessage } from "@/lib/apiClient";
 
 export default function LoginPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const login = useAuthStore(state => state.login);
+  const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+  const setAuth = useAuthStore(state => state.setAuth);
   const router = useRouter();
 
-  const handleLogin = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSignIn = async (credentials = { email, password }) => {
+    setLoading(true);
+    setError(null);
     try {
-      const res = await fetch('http://localhost:4000/api/auth/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password })
-      });
-      if (res.ok) {
-        const data = await res.json();
-        login(data.user, data.token);
-        router.push('/dashboard');
-      } else {
-        alert('Login failed');
-      }
+      const { data } = await apiClient.post('/auth/login', credentials);
+      setAuth(data.user, data.accessToken || data.token, data.refreshToken || null);
+      router.push('/dashboard');
     } catch (err) {
       console.error(err);
+      setError(getApiErrorMessage(err, 'Invalid credentials'));
+    } finally {
+      setLoading(false);
     }
   };
 
-  const quickLogin = (email: string) => {
-    setEmail(email);
-    setPassword('AtomPulse@2025');
+  const handleLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    await handleSignIn();
+  };
+
+  const quickLogin = async (role: 'employee' | 'manager' | 'admin') => {
+    const credentials = {
+      employee: { email: 'employee@atompulse.com', password: 'AtomPulse@2025' },
+      manager: { email: 'manager@atompulse.com', password: 'AtomPulse@2025' },
+      admin: { email: 'admin@atompulse.com', password: 'AtomPulse@2025' },
+    }[role];
+    setEmail(credentials.email);
+    setPassword(credentials.password);
+    await handleSignIn(credentials);
   };
 
   return (
@@ -108,16 +117,17 @@ export default function LoginPage() {
               </div>
 
               <button type="submit" className="btn btn-primary w-full">
-                Sign In
+                {loading ? 'Signing in...' : 'Sign In'}
               </button>
+              {error && <p className="text-center text-sm text-destructive">{error}</p>}
             </form>
 
             <div className="mt-8 border-t border-border/70 pt-6">
               <p className="mb-4 text-center text-sm font-medium text-muted-foreground">Quick Demo Login</p>
               <div className="grid grid-cols-3 gap-2">
-                <button onClick={() => quickLogin('employee@atompulse.com')} className="btn btn-secondary min-h-9 px-2 text-xs">Employee</button>
-                <button onClick={() => quickLogin('manager@atompulse.com')} className="btn btn-secondary min-h-9 px-2 text-xs">Manager</button>
-                <button onClick={() => quickLogin('admin@atompulse.com')} className="btn btn-secondary min-h-9 px-2 text-xs">Admin/HR</button>
+                <button onClick={() => quickLogin('employee')} className="btn btn-secondary min-h-9 px-2 text-xs" disabled={loading}>Employee</button>
+                <button onClick={() => quickLogin('manager')} className="btn btn-secondary min-h-9 px-2 text-xs" disabled={loading}>Manager</button>
+                <button onClick={() => quickLogin('admin')} className="btn btn-secondary min-h-9 px-2 text-xs" disabled={loading}>Admin/HR</button>
               </div>
             </div>
           </div>

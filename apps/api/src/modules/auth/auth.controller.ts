@@ -46,6 +46,8 @@ export const login = async (req: Request, res: Response) => {
   
   res.json({
     token,
+    accessToken: token,
+    refreshToken: token,
     user: {
       id: user.id,
       name: user.name,
@@ -55,6 +57,42 @@ export const login = async (req: Request, res: Response) => {
       departmentId: user.departmentId
     }
   });
+};
+
+export const refresh = async (req: Request, res: Response) => {
+  const { refreshToken } = req.body;
+  if (!refreshToken) throw new UnauthorizedError('No refresh token provided');
+
+  try {
+    const decoded = jwt.verify(refreshToken, JWT_SECRET) as any;
+    const user = await prisma.user.findUnique({
+      where: { id: decoded.userId },
+      include: {
+        role: { include: { permissions: { include: { permission: true } } } }
+      }
+    });
+    if (!user || user.status !== 'ACTIVE') throw new UnauthorizedError('Invalid refresh token');
+
+    const permissions = user.role.permissions.map((rp: any) => rp.permission.permissionKey);
+    const payload = { userId: user.id, role: user.role.roleName, permissions };
+    const token = jwt.sign(payload, JWT_SECRET, { expiresIn: '7d' });
+
+    res.json({
+      token,
+      accessToken: token,
+      refreshToken: token,
+      user: {
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        role: user.role.roleName,
+        permissions,
+        departmentId: user.departmentId
+      }
+    });
+  } catch {
+    throw new UnauthorizedError('Invalid or expired refresh token');
+  }
 };
 
 export const me = async (req: Request, res: Response) => {
