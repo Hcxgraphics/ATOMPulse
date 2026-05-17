@@ -1,0 +1,311 @@
+"use client";
+
+import Link from "next/link";
+import { usePathname, useRouter } from "next/navigation";
+import React from "react";
+import { useAuthStore } from "@/lib/store";
+
+type NavItem = {
+  href: string;
+  label: string;
+  icon: React.ReactNode;
+  roles?: string[];
+};
+
+const adminRoles = ["ADMIN_HR", "SUPER_ADMIN"];
+const managerRoles = ["MANAGER_L1", "ADMIN_HR", "SUPER_ADMIN"];
+
+const navGroups: { label: string; items: NavItem[] }[] = [
+  {
+    label: "My Work",
+    items: [
+      { href: "/dashboard", label: "Dashboard", icon: <DashboardIcon /> },
+      { href: "/goals", label: "My Goals", icon: <TargetIcon /> },
+      { href: "/checkins", label: "Check-ins", icon: <CheckIcon /> },
+    ],
+  },
+  {
+    label: "Team",
+    items: [{ href: "/team", label: "Team Overview", icon: <UsersIcon />, roles: managerRoles }],
+  },
+  {
+    label: "Admin",
+    items: [
+      { href: "/admin/analytics", label: "Analytics", icon: <ChartIcon />, roles: adminRoles },
+      { href: "/admin/cycles", label: "Goal Cycles", icon: <CalendarIcon />, roles: adminRoles },
+      { href: "/admin/escalations", label: "Escalations", icon: <ShieldIcon />, roles: adminRoles },
+      { href: "/admin/audit", label: "Audit Logs", icon: <ScrollIcon />, roles: adminRoles },
+    ],
+  },
+];
+
+export function PortalChrome({ children }: { children: React.ReactNode }) {
+  const { user, logout } = useAuthStore();
+  const pathname = usePathname();
+  const router = useRouter();
+  const [open, setOpen] = React.useState(false);
+
+  if (!user) return null;
+
+  const initials = user.name
+    .split(" ")
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((part) => part[0])
+    .join("")
+    .toUpperCase() || "AP";
+
+  const visibleGroups = navGroups
+    .map((group) => ({
+      ...group,
+      items: group.items.filter((item) => !item.roles || item.roles.includes(user.role)),
+    }))
+    .filter((group) => group.items.length > 0);
+
+  const current = visibleGroups.flatMap((group) => group.items).find((item) => pathname === item.href);
+
+  const signOut = () => {
+    logout();
+    router.push("/login");
+  };
+
+  return (
+    <div className="relative min-h-screen overflow-hidden bg-background text-foreground">
+      <div className="fixed inset-0 -z-20 gradient-aurora opacity-80" />
+      <div className="fixed inset-0 -z-10 grid-bg opacity-40" />
+
+      <div className="flex min-h-screen">
+        <aside className="hidden w-[268px] shrink-0 border-r border-border/70 glass-strong lg:flex lg:flex-col">
+          <SidebarContent
+            groups={visibleGroups}
+            pathname={pathname}
+            initials={initials}
+            userName={user.name}
+            role={user.role}
+            onLogout={signOut}
+          />
+        </aside>
+
+        {open && (
+          <div className="fixed inset-0 z-50 lg:hidden">
+            <button className="absolute inset-0 bg-black/60" onClick={() => setOpen(false)} aria-label="Close navigation" />
+            <aside className="relative h-full w-[290px] border-r border-border/70 glass-strong">
+              <SidebarContent
+                groups={visibleGroups}
+                pathname={pathname}
+                initials={initials}
+                userName={user.name}
+                role={user.role}
+                onLogout={signOut}
+                onNavigate={() => setOpen(false)}
+              />
+            </aside>
+          </div>
+        )}
+
+        <div className="flex min-w-0 flex-1 flex-col">
+          <header className="sticky top-0 z-40 border-b border-border/70 glass-strong">
+            <div className="flex h-16 items-center gap-4 px-4 sm:px-6 lg:px-10">
+              <button className="icon-button lg:hidden" onClick={() => setOpen(true)} aria-label="Open navigation">
+                <MenuIcon />
+              </button>
+              <nav className="min-w-0 text-sm text-muted-foreground">
+                <span>AtomPulse</span>
+                <span className="mx-2 text-muted-foreground/50">/</span>
+                <span className="font-medium text-foreground">{current?.label ?? "Workspace"}</span>
+              </nav>
+              <div className="ml-auto flex items-center gap-2">
+                <div className="hidden h-9 min-w-[220px] items-center gap-2 rounded-lg border border-border/70 bg-white/[0.04] px-3 text-xs text-muted-foreground md:flex">
+                  <SearchIcon />
+                  Search goals, people, cycles
+                  <kbd className="ml-auto rounded border border-border/60 px-1.5 py-0.5 font-mono text-[10px]">K</kbd>
+                </div>
+                <button className="icon-button" aria-label="Notifications">
+                  <BellIcon />
+                  <span className="absolute right-2 top-2 h-1.5 w-1.5 rounded-full bg-teal shadow-[0_0_10px_var(--teal)]" />
+                </button>
+                <div className="grid h-9 w-9 place-items-center rounded-lg gradient-primary text-xs font-bold text-primary-foreground shadow-glow">
+                  {initials}
+                </div>
+              </div>
+            </div>
+          </header>
+
+          <main className="flex-1 overflow-y-auto px-4 py-6 sm:px-6 lg:px-10 lg:py-8">
+            <div className="mx-auto w-full max-w-[1400px] animate-rise">{children}</div>
+          </main>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function SidebarContent({
+  groups,
+  pathname,
+  initials,
+  userName,
+  role,
+  onLogout,
+  onNavigate,
+}: {
+  groups: { label: string; items: NavItem[] }[];
+  pathname: string;
+  initials: string;
+  userName: string;
+  role: string;
+  onLogout: () => void;
+  onNavigate?: () => void;
+}) {
+  return (
+    <div className="flex h-full flex-col">
+      <div className="px-6 pb-8 pt-6">
+        <Link href="/dashboard" onClick={onNavigate} className="group flex items-center gap-3">
+          <div className="relative grid h-10 w-10 place-items-center rounded-xl gradient-primary text-primary-foreground shadow-glow">
+            <SparkIcon />
+            <div className="absolute inset-0 -z-10 rounded-xl gradient-primary opacity-50 blur-lg" />
+          </div>
+          <div>
+            <div className="text-lg font-bold tracking-tight">AtomPulse</div>
+            <div className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground">Performance OS</div>
+          </div>
+        </Link>
+      </div>
+
+      <nav className="flex-1 space-y-6 overflow-y-auto px-3">
+        {groups.map((group) => (
+          <div key={group.label}>
+            <div className="mb-2 px-3 text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground/70">
+              {group.label}
+            </div>
+            <ul className="space-y-1">
+              {group.items.map((item) => {
+                const active = pathname === item.href || pathname.startsWith(`${item.href}/`);
+                return (
+                  <li key={item.href}>
+                    <Link
+                      href={item.href}
+                      onClick={onNavigate}
+                      className={`relative flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm transition ${
+                        active ? "nav-active text-foreground" : "text-muted-foreground hover:bg-white/[0.04] hover:text-foreground"
+                      }`}
+                    >
+                      <span className={active ? "text-primary-glow" : ""}>{item.icon}</span>
+                      <span className="font-medium">{item.label}</span>
+                      {active && <span className="ml-auto h-1.5 w-1.5 rounded-full bg-teal shadow-[0_0_12px_var(--teal)]" />}
+                    </Link>
+                  </li>
+                );
+              })}
+            </ul>
+          </div>
+        ))}
+      </nav>
+
+      <div className="border-t border-border/70 p-3">
+        <div className="rounded-xl border border-border/70 bg-white/[0.04] p-3">
+          <div className="flex items-center gap-3">
+            <div className="grid h-9 w-9 place-items-center rounded-full gradient-primary text-xs font-bold text-primary-foreground">
+              {initials}
+            </div>
+            <div className="min-w-0 flex-1">
+              <div className="truncate text-sm font-medium">{userName}</div>
+              <div className="truncate font-mono text-[10px] uppercase tracking-wider text-muted-foreground">{role}</div>
+            </div>
+            <button className="icon-button" onClick={onLogout} aria-label="Sign out">
+              <LogoutIcon />
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+export function PageHeader({
+  eyebrow,
+  title,
+  description,
+  actions,
+}: {
+  eyebrow?: string;
+  title: string;
+  description?: string;
+  actions?: React.ReactNode;
+}) {
+  return (
+    <div className="mb-8 flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+      <div>
+        {eyebrow && <div className="mb-2 text-[11px] font-semibold uppercase tracking-[0.22em] text-muted-foreground">{eyebrow}</div>}
+        <h1 className="text-3xl font-semibold tracking-tight text-foreground lg:text-4xl">{title}</h1>
+        {description && <p className="mt-2 max-w-2xl text-sm text-muted-foreground">{description}</p>}
+      </div>
+      {actions && <div className="flex flex-wrap gap-2">{actions}</div>}
+    </div>
+  );
+}
+
+export function StatCard({
+  label,
+  value,
+  sublabel,
+  accent = "primary",
+  icon,
+}: {
+  label: string;
+  value: React.ReactNode;
+  sublabel?: React.ReactNode;
+  accent?: "primary" | "teal" | "violet" | "warning" | "success" | "destructive";
+  icon?: React.ReactNode;
+}) {
+  return (
+    <div className={`stat-card stat-${accent}`}>
+      <div className="relative rounded-2xl border border-border/80 bg-card/70 p-5 backdrop-blur-xl">
+        <div className="mb-6 flex items-start justify-between">
+          <div className="flex items-center gap-2">
+            <span className={`status-dot dot-${accent}`} />
+            <span className="text-[11px] font-medium uppercase tracking-[0.18em] text-muted-foreground">{label}</span>
+          </div>
+          {icon && <div className="text-muted-foreground/70">{icon}</div>}
+        </div>
+        <div className="font-mono text-3xl font-semibold tracking-tight tabular-nums md:text-4xl">{value}</div>
+        {sublabel && <div className="mt-2 text-xs text-muted-foreground">{sublabel}</div>}
+      </div>
+    </div>
+  );
+}
+
+export function Panel({ children, className = "" }: { children: React.ReactNode; className?: string }) {
+  return <section className={`rounded-2xl border border-border/80 bg-card/65 p-5 shadow-elevated backdrop-blur-xl ${className}`}>{children}</section>;
+}
+
+export function Pill({ children, tone = "muted" }: { children: React.ReactNode; tone?: "muted" | "success" | "warning" | "primary" | "danger" }) {
+  return <span className={`pill pill-${tone}`}>{children}</span>;
+}
+
+function IconBase({ children }: { children: React.ReactNode }) {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+      {children}
+    </svg>
+  );
+}
+
+export function DashboardIcon() { return <IconBase><rect x="3" y="3" width="7" height="8" rx="1.5" /><rect x="14" y="3" width="7" height="5" rx="1.5" /><rect x="14" y="12" width="7" height="9" rx="1.5" /><rect x="3" y="15" width="7" height="6" rx="1.5" /></IconBase>; }
+export function TargetIcon() { return <IconBase><circle cx="12" cy="12" r="8" /><circle cx="12" cy="12" r="4" /><path d="M12 8v4l3 2" /></IconBase>; }
+export function CheckIcon() { return <IconBase><path d="M9 11l2 2 4-5" /><rect x="4" y="4" width="16" height="16" rx="3" /></IconBase>; }
+export function UsersIcon() { return <IconBase><path d="M16 19c0-2.2-1.8-4-4-4s-4 1.8-4 4" /><circle cx="12" cy="8" r="3" /><path d="M21 19c0-1.8-1.2-3.2-3-3.8" /><path d="M3 19c0-1.8 1.2-3.2 3-3.8" /></IconBase>; }
+export function ChartIcon() { return <IconBase><path d="M4 19V5" /><path d="M4 19h16" /><path d="M8 15l3-4 3 2 4-7" /></IconBase>; }
+export function CalendarIcon() { return <IconBase><rect x="4" y="5" width="16" height="15" rx="2" /><path d="M8 3v4" /><path d="M16 3v4" /><path d="M4 10h16" /></IconBase>; }
+export function ShieldIcon() { return <IconBase><path d="M12 3l7 3v5c0 4.5-2.8 8.5-7 10-4.2-1.5-7-5.5-7-10V6l7-3z" /><path d="M9 12l2 2 4-5" /></IconBase>; }
+export function ScrollIcon() { return <IconBase><path d="M8 4h10a2 2 0 012 2v13l-3-2-3 2-3-2-3 2V4z" /><path d="M4 6a2 2 0 012-2h2v15l-2-1.3L4 19V6z" /><path d="M11 8h5" /><path d="M11 12h5" /></IconBase>; }
+export function BellIcon() { return <IconBase><path d="M18 9a6 6 0 10-12 0c0 7-3 7-3 7h18s-3 0-3-7" /><path d="M10 20a2 2 0 004 0" /></IconBase>; }
+export function SearchIcon() { return <IconBase><circle cx="11" cy="11" r="7" /><path d="M20 20l-3-3" /></IconBase>; }
+export function MenuIcon() { return <IconBase><path d="M4 7h16" /><path d="M4 12h16" /><path d="M4 17h16" /></IconBase>; }
+export function LogoutIcon() { return <IconBase><path d="M10 17l5-5-5-5" /><path d="M15 12H3" /><path d="M21 4v16" /></IconBase>; }
+export function SparkIcon() { return <IconBase><path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8L12 3z" /></IconBase>; }
+export function ArrowIcon() { return <IconBase><path d="M7 17L17 7" /><path d="M9 7h8v8" /></IconBase>; }
+export function ClockIcon() { return <IconBase><circle cx="12" cy="12" r="8" /><path d="M12 8v5l3 2" /></IconBase>; }
+export function AlertIcon() { return <IconBase><path d="M12 3l9 16H3L12 3z" /><path d="M12 9v4" /><path d="M12 17h.01" /></IconBase>; }
+export function LockIcon() { return <IconBase><rect x="5" y="10" width="14" height="10" rx="2" /><path d="M8 10V8a4 4 0 018 0v2" /></IconBase>; }
+export function UserCogIcon() { return <IconBase><circle cx="9" cy="8" r="3" /><path d="M3 19c0-3 2.5-5 6-5" /><circle cx="17" cy="16" r="2" /><path d="M17 12.5v1" /><path d="M17 18.5v1" /><path d="M13.9 14.2l.8.5" /><path d="M19.3 17.3l.8.5" /><path d="M20.1 14.2l-.8.5" /><path d="M14.7 17.3l-.8.5" /></IconBase>; }

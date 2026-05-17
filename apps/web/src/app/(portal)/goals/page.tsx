@@ -1,5 +1,7 @@
 "use client";
-import React, { useState } from 'react';
+
+import React, { useState } from "react";
+import { PageHeader, Panel, Pill, TargetIcon } from "@/components/ui-shell";
 
 export default function GoalsPage() {
   const [goals, setGoals] = useState([
@@ -8,78 +10,79 @@ export default function GoalsPage() {
   ]);
 
   const totalWeightage = goals.reduce((sum, g) => sum + g.weightage, 0);
+  const trackerTone = totalWeightage === 100 ? "bg-success" : totalWeightage > 100 ? "bg-destructive" : "bg-primary";
 
   return (
-    <div className="p-8 max-w-5xl mx-auto">
-      <div className="flex justify-between items-center mb-6">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">My Goal Sheet</h1>
-          <p className="text-sm text-gray-500">2026 Annual Goals Cycle &middot; <span className="text-gray-600 font-medium bg-gray-100 px-2 py-0.5 rounded-full text-xs">Draft</span></p>
-        </div>
-        <div className="flex space-x-3">
-          <button className="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50">
-            + Add Goal
-          </button>
-          <button 
-            disabled={totalWeightage !== 100}
-            className={`px-4 py-2 rounded-md text-sm font-medium text-white ${totalWeightage === 100 ? 'bg-[#1A56DB] hover:bg-blue-700' : 'bg-gray-300 cursor-not-allowed'}`}
-          >
-            Submit for Approval
-          </button>
-        </div>
-      </div>
+    <div className="mx-auto max-w-6xl">
+      <PageHeader
+        eyebrow="2026 Annual Goals Cycle"
+        title="My Goal Sheet"
+        description="Build, balance, and submit your commitments for manager approval."
+        actions={
+          <>
+            <button className="btn btn-secondary">Add Goal</button>
+            <button disabled={totalWeightage !== 100} className="btn btn-primary">
+              Submit for Approval
+            </button>
+          </>
+        }
+      />
 
-      {/* Weightage Tracker */}
-      <div className="mb-8">
-        <div className="flex justify-between text-sm mb-1">
-          <span className="font-medium text-gray-700">Total Weightage</span>
-          <span className={`font-bold ${totalWeightage === 100 ? 'text-[#0E9F6E]' : totalWeightage > 100 ? 'text-red-600' : 'text-gray-700'}`}>
+      <Panel className="mb-8">
+        <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <div className="text-sm font-semibold">Total Weightage</div>
+            <div className="mt-1 text-xs text-muted-foreground">Goal sheets must total 100% before submission.</div>
+          </div>
+          <div className={`font-mono text-lg font-bold ${totalWeightage === 100 ? "text-success" : totalWeightage > 100 ? "text-destructive" : "text-foreground"}`}>
             {totalWeightage}% / 100%
-          </span>
+          </div>
         </div>
-        <div className="w-full bg-gray-200 rounded-full h-2">
-          <div 
-            className={`h-2 rounded-full ${totalWeightage === 100 ? 'bg-[#0E9F6E]' : totalWeightage > 100 ? 'bg-red-500' : 'bg-[#1A56DB]'}`}
-            style={{ width: `${Math.min(totalWeightage, 100)}%` }}
-          ></div>
+        <div className="h-3 overflow-hidden rounded-full bg-muted">
+          <div className={`h-full rounded-full ${trackerTone} transition-all`} style={{ width: `${Math.min(totalWeightage, 100)}%` }} />
         </div>
-      </div>
+      </Panel>
 
-      {/* Goals List */}
       <div className="space-y-4">
         {goals.map(goal => (
-          <div key={goal.id} className="bg-white p-5 rounded-lg border border-gray-200 shadow-sm relative group hover:border-[#1A56DB] transition-colors">
-            <div className="flex justify-between items-start mb-2">
-              <div className="flex items-center space-x-2">
-                <h3 className="text-lg font-bold text-gray-900">{goal.title}</h3>
-                <span className="text-xs font-medium text-gray-600 bg-gray-100 px-2 py-0.5 rounded-full border border-gray-200">{goal.thrust}</span>
+          <Panel key={goal.id} className="group transition hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-glow">
+            <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+              <div className="min-w-0">
+                <div className="mb-2 flex flex-wrap items-center gap-2">
+                  <h3 className="text-xl font-semibold tracking-tight">{goal.title}</h3>
+                  <Pill tone="primary">{goal.thrust}</Pill>
+                  {goal.isLocked && <Pill tone="success">Locked</Pill>}
+                </div>
+                <div className="grid gap-2 text-sm text-muted-foreground sm:grid-cols-2">
+                  <p><span className="text-foreground">UOM:</span> {goal.uom}</p>
+                  <p><span className="text-foreground">Target:</span> {goal.target}</p>
+                </div>
+                <p className="mt-4 max-w-2xl text-sm leading-6 text-muted-foreground">
+                  Achieve Q1-Q4 targets seamlessly as planned with measurable checkpoints and aligned ownership.
+                </p>
               </div>
-              <div className="flex items-center space-x-4">
-                <span className="text-lg font-bold text-[#1A56DB]">{goal.weightage}% weight</span>
+              <div className="rounded-2xl border border-primary/25 bg-primary/10 px-4 py-3 text-right">
+                <div className="font-mono text-2xl font-semibold text-primary-glow">{goal.weightage}%</div>
+                <div className="text-[10px] uppercase tracking-[0.16em] text-muted-foreground">Weight</div>
               </div>
-            </div>
-            
-            <div className="text-sm text-gray-600 space-y-1 mb-4">
-              <p><strong>UOM:</strong> {goal.uom}</p>
-              <p><strong>Target:</strong> {goal.target}</p>
-              <p className="mt-2 text-gray-500">Achieve Q1-Q4 targets seamlessly as planned...</p>
             </div>
 
-            <div className="flex justify-end space-x-2 border-t border-gray-100 pt-3">
-              <button className="text-sm text-gray-500 hover:text-[#1A56DB] font-medium">Edit</button>
-              <button className="text-sm text-red-500 hover:text-red-700 font-medium">Delete</button>
+            <div className="mt-5 flex justify-end gap-2 border-t border-border/70 pt-4">
+              <button className="btn btn-secondary min-h-9 px-3 text-xs">Edit</button>
+              <button className="btn min-h-9 border-destructive/30 bg-destructive/10 px-3 text-xs text-destructive">Delete</button>
             </div>
-          </div>
+          </Panel>
         ))}
 
         {goals.length === 0 && (
-          <div className="text-center py-12 bg-white border border-dashed border-gray-300 rounded-lg">
-            <h3 className="text-sm font-medium text-gray-900">No goals</h3>
-            <p className="mt-1 text-sm text-gray-500">Get started by creating a new goal.</p>
-            <button className="mt-4 px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50">
-              + Add Goal
-            </button>
-          </div>
+          <Panel className="py-14 text-center">
+            <div className="mx-auto mb-4 grid h-12 w-12 place-items-center rounded-2xl bg-primary/15 text-primary-glow">
+              <TargetIcon />
+            </div>
+            <h3 className="text-sm font-semibold">No goals</h3>
+            <p className="mt-1 text-sm text-muted-foreground">Get started by creating a new goal.</p>
+            <button className="btn btn-secondary mt-5">Add Goal</button>
+          </Panel>
         )}
       </div>
     </div>
