@@ -1,0 +1,283 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// === ENUMS ===
+
+enum UserStatus { 
+  ACTIVE 
+  INACTIVE 
+}
+enum GoalSheetStatus { 
+  DRAFT 
+  SUBMITTED 
+  APPROVED 
+  LOCKED 
+  RETURNED 
+}
+enum GoalStatus { 
+  DRAFT 
+  SUBMITTED 
+  APPROVED 
+  LOCKED 
+  RETURNED 
+}
+enum UomFormulaType { 
+  MIN 
+  MAX 
+  TIMELINE 
+  ZERO 
+}
+enum CheckinStatus { 
+  NOT_STARTED 
+  ON_TRACK 
+  COMPLETED 
+}
+enum QuarterPeriod { 
+  Q1 
+  Q2 
+  Q3 
+  Q4_ANNUAL 
+}
+enum CycleStatus { 
+  UPCOMING 
+  OPEN 
+  CHECKIN_OPEN 
+  CLOSED 
+}
+enum EscalationStatus { 
+  PENDING 
+  RESOLVED 
+  DISMISSED 
+}
+enum NotificationType {
+  GOAL_SUBMITTED 
+  GOAL_APPROVED 
+  GOAL_RETURNED
+  CHECKIN_REMINDER 
+  CHECKIN_DUE 
+  GOAL_UNLOCKED
+  ESCALATION_TRIGGERED 
+  SHARED_GOAL_PUSHED
+}
+enum AuditEntityType { 
+  GOAL 
+  GOAL_SHEET 
+  CHECKIN 
+  USER 
+  CYCLE 
+}
+
+// === CORE ENTITIES ===
+
+model Department {
+  id                 String       @id @default(cuid())
+  name               String
+  parentDepartmentId String?
+  parentDepartment   Department?  @relation("DeptHierarchy", fields: [parentDepartmentId], references: [id])
+  childDepartments   Department[] @relation("DeptHierarchy")
+  users              User[]
+  createdAt          DateTime     @default(now())
+}
+
+model Role {
+  id          String           @id @default(cuid())
+  roleName    String           @unique
+  permissions RolePermission[]
+  users       User[]
+}
+
+model Permission {
+  id            String           @id @default(cuid())
+  permissionKey String           @unique
+  description   String?
+  roles         RolePermission[]
+}
+
+model RolePermission {
+  roleId       String
+  permissionId String
+  role         Role       @relation(fields: [roleId], references: [id])
+  permission   Permission @relation(fields: [permissionId], references: [id])
+  @@id([roleId, permissionId])
+}
+
+model User {
+  id               String       @id @default(cuid())
+  employeeCode     String       @unique
+  name             String
+  email            String       @unique
+  passwordHash     String
+  managerId        String?
+  manager          User?        @relation("ReportsTo", fields: [managerId], references: [id])
+  directReports    User[]       @relation("ReportsTo")
+  departmentId     String
+  department       Department   @relation(fields: [departmentId], references: [id])
+  roleId           String
+  role             Role         @relation(fields: [roleId], references: [id])
+  status           UserStatus   @default(ACTIVE)
+  avatarUrl        String?
+  goalSheets       GoalSheet[]
+  managedGoalSheets GoalSheet[] @relation("ManagedSheets")
+  auditLogs        AuditLog[]   @relation("AuditChangedBy")
+  managerFeedbacks ManagerFeedback[]
+  notifications    Notification[]
+  escalations      Escalation[]
+  createdAt        DateTime     @default(now())
+  updatedAt        DateTime     @updatedAt
+}
+
+model GoalCycle {
+  id          String          @id @default(cuid())
+  name        String
+  year        Int
+  startDate   DateTime
+  endDate     DateTime
+  status      CycleStatus     @default(UPCOMING)
+  goalSheets  GoalSheet[]
+  checkins    CheckinWindow[]
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+}
+
+model CheckinWindow {
+  id          String        @id @default(cuid())
+  cycleId     String
+  cycle       GoalCycle     @relation(fields: [cycleId], references: [id])
+  quarter     QuarterPeriod
+  opensAt     DateTime
+  closesAt    DateTime
+  isActive    Boolean       @default(false)
+}
+
+model ThrustArea {
+  id          String  @id @default(cuid())
+  name        String
+  description String?
+  goals       Goal[]
+}
+
+model UomType {
+  id          String          @id @default(cuid())
+  name        String          @unique
+  formulaType UomFormulaType
+  description String?
+  goals       Goal[]
+}
+
+model GoalSheet {
+  id           String          @id @default(cuid())
+  employeeId   String
+  employee     User            @relation(fields: [employeeId], references: [id])
+  managerId    String?
+  manager      User?           @relation("ManagedSheets", fields: [managerId], references: [id])
+  cycleId      String
+  cycle        GoalCycle       @relation(fields: [cycleId], references: [id])
+  status       GoalSheetStatus @default(DRAFT)
+  submittedAt  DateTime?
+  approvedAt   DateTime?
+  lockedAt     DateTime?
+  returnedAt   DateTime?
+  returnReason String?
+  goals        Goal[]
+  auditLogs    AuditLog[]
+  escalations  Escalation[]
+  createdAt    DateTime        @default(now())
+  updatedAt    DateTime        @updatedAt
+}
+
+model Goal {
+  id             String     @id @default(cuid())
+  goalSheetId    String
+  goalSheet      GoalSheet  @relation(fields: [goalSheetId], references: [id])
+  title          String
+  description    String?
+  thrustAreaId   String
+  thrustArea     ThrustArea @relation(fields: [thrustAreaId], references: [id])
+  uomTypeId      String
+  uomType        UomType    @relation(fields: [uomTypeId], references: [id])
+  targetValue    Float
+  weightage      Float
+  isShared       Boolean    @default(false)
+  primaryGoalId  String?
+  primaryGoal    Goal?      @relation("SharedGoals", fields: [primaryGoalId], references: [id])
+  sharedCopies   Goal[]     @relation("SharedGoals")
+  createdBy      String
+  status         GoalStatus @default(DRAFT)
+  checkins       Checkin[]
+  auditLogs      AuditLog[]
+  createdAt      DateTime   @default(now())
+  updatedAt      DateTime   @updatedAt
+}
+
+model Checkin {
+  id             String            @id @default(cuid())
+  goalId         String
+  goal           Goal              @relation(fields: [goalId], references: [id])
+  quarter        QuarterPeriod
+  plannedValue   Float
+  actualValue    Float?
+  status         CheckinStatus     @default(NOT_STARTED)
+  progressScore  Float?
+  submittedAt    DateTime?
+  feedback       ManagerFeedback[]
+  createdAt      DateTime          @default(now())
+  updatedAt      DateTime          @updatedAt
+}
+
+model ManagerFeedback {
+  id         String   @id @default(cuid())
+  checkinId  String
+  checkin    Checkin  @relation(fields: [checkinId], references: [id])
+  managerId  String
+  manager    User     @relation(fields: [managerId], references: [id])
+  feedback   String
+  createdAt  DateTime @default(now())
+}
+
+model AuditLog {
+  id           String          @id @default(cuid())
+  entityType   AuditEntityType
+  entityId     String
+  fieldName    String
+  oldValue     String?
+  newValue     String?
+  changedById  String
+  changedBy    User            @relation("AuditChangedBy", fields: [changedById], references: [id])
+  changedAt    DateTime        @default(now())
+  goalSheetId  String?
+  goalSheet    GoalSheet?      @relation(fields: [goalSheetId], references: [id])
+  goalId       String?
+  goal         Goal?           @relation(fields: [goalId], references: [id])
+}
+
+model Notification {
+  id        String           @id @default(cuid())
+  userId    String
+  user      User             @relation(fields: [userId], references: [id])
+  type      NotificationType
+  title     String
+  message   String
+  link      String?
+  read      Boolean          @default(false)
+  createdAt DateTime         @default(now())
+}
+
+model Escalation {
+  id               String           @id @default(cuid())
+  userId           String
+  user             User             @relation(fields: [userId], references: [id])
+  goalSheetId      String?
+  goalSheet        GoalSheet?       @relation(fields: [goalSheetId], references: [id])
+  escalationLevel  Int              @default(1)
+  reason           String
+  status           EscalationStatus @default(PENDING)
+  triggeredAt      DateTime         @default(now())
+  resolvedAt       DateTime?
+  notes            String?
+}

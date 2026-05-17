@@ -1,0 +1,42 @@
+services:
+  # ─── Backend API ───────────────────────────────────
+  - type: web
+    name: atompulse-api
+    runtime: node
+    rootDir: apps/api
+    buildCommand: npm install && npm run build && npx prisma migrate deploy && npx prisma db seed
+    startCommand: npm run start:prod
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: DATABASE_URL
+        sync: false        # Set manually in Render dashboard
+      - key: REDIS_URL
+        sync: false
+      - key: JWT_SECRET
+        generateValue: true
+      - key: JWT_REFRESH_SECRET
+        generateValue: true
+      - key: JWT_EXPIRES_IN
+        value: 15m
+      - key: JWT_REFRESH_EXPIRES_IN
+        value: 7d
+      - key: RESEND_API_KEY
+        sync: false
+      - key: EMAIL_FROM
+        value: onboarding@resend.dev
+      - key: APP_URL
+        sync: false
+
+  # ─── Frontend Web ───────────────────────────────────
+  - type: web
+    name: atompulse-web
+    runtime: node
+    rootDir: apps/web
+    buildCommand: npm install && npm run build
+    startCommand: npm run start
+    envVars:
+      - key: NEXT_PUBLIC_API_URL
+        sync: false        # Set to your API's Render URL
+      - key: NEXT_PUBLIC_APP_NAME
+        value: AtomPulse
