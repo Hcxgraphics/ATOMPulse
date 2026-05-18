@@ -132,7 +132,7 @@ MIT License. Created for the AtomQuest Hackathon 1.0. -->
 ### Enterprise Goal Intelligence & Performance Management Platform
 
 <p align="center">
-ATOMPulse is a modern enterprise-grade workforce performance ecosystem designed for intelligent goal governance, quarterly check-ins, workflow automation, escalations, analytics, and organization-wide alignment.
+ATOMPulse is a modern enterprise grade workforce performance ecosystem designed for intelligent goal governance, quarterly check-ins, workflow automation, escalations, analytics, and organization-wide alignment.
 </p>
 
 <p align="center">
@@ -156,7 +156,7 @@ Built for <strong>ATOMQUEST Hackathon 1.0</strong>
 
 # ✨ Overview
 
-ATOMPulse is a full-stack enterprise performance platform engineered to streamline the complete employee goal lifecycle — from goal creation and approval workflows to quarterly tracking, escalations, governance, and analytics.
+ATOMPulse is a fullstack enterprise performance platform engineered to streamline the complete employee goal lifecycle from goal creation and approval workflows to quarterly tracking, escalations, governance, and analytics.
 
 Inspired by modern workflow tools like Jira and Trello, the platform combines intelligent workflow orchestration, role-based access control, real-time dashboards, audit governance, and event-driven architecture into a scalable enterprise ecosystem.
 
@@ -168,30 +168,22 @@ Inspired by modern workflow tools like Jira and Trello, the platform combines in
 
 ## ✅ Fully Functional Modules
 
-* JWT Authentication & Role-Based Access
+* JWT Authentication & Role Based Access (RBAC)
 * Enterprise Portal Shell
 * Dynamic Sidebar Navigation
 * Escalation Engine APIs
 * Audit Governance System
-* Real-time Admin Workflows
+* Real Time Admin Workflows
 * Modular Backend API Architecture
 * Monorepo Infrastructure
-* Role-aware UI Rendering
+* Role aware UI Rendering
 * API-driven Escalation Management
 
 ---
 
 # 🖥 Dashboard Preview
 
-> Add your dashboard screenshots below
-
-```md
-![Admin Dashboard](./docs/admin-dashboard.png)
-
-![Manager Workflow](./docs/manager-board.png)
-
-![Employee Goals](./docs/employee-goals.png)
-```
+<img src="\assets\admin_dash.png" width="100%" alt="ATOMPulse Admin Dashboard"/>
 
 ---
 
@@ -351,6 +343,82 @@ The following enterprise workflows are currently being integrated with backend s
 * Shared Goal Synchronization
 
 ---
+
+# AtomPulse Architecture
+
+High-level architecture of AtomPulse.
+
+```mermaid
+graph TD
+    %% Clients
+    Browser[Browser / Next.js Client]
+    
+    %% Frontend Layer
+    subgraph Frontend [Next.js 14 Web App]
+        Zustand[Zustand State]
+        ReactQuery[React Query Cache]
+        UIPackage[Shared UI Package]
+    end
+    
+    %% API Gateway / Backend Layer
+    subgraph Backend [Express.js API Server]
+        Router[API Routes & Middleware]
+        AuthMod[Auth Module]
+        GoalMod[Goal Management Module]
+        CheckinMod[Check-in Module]
+        AnalyticsMod[Analytics Module]
+        AuditMod[Audit Module]
+        ExportMod[Export Module ExcelJS]
+        
+        EventBus[Event Bus / Notification Listener]
+        EscalationJob[Bull / Cron Jobs]
+    end
+    
+    %% Data Layer
+    subgraph Data [Data Persistence]
+        PrismaORM[Prisma ORM]
+        PostgreSQL[(PostgreSQL 15)]
+        Redis[(Redis 7)]
+    end
+    
+    %% External Services
+    subgraph External [External Integrations]
+        Resend[Resend Email API]
+        MSTeams[MS Teams Webhooks]
+    end
+
+    %% Connections
+    Browser <-->|HTTPS / REST| Router
+    Router --> AuthMod
+    Router --> GoalMod
+    Router --> CheckinMod
+    Router --> AnalyticsMod
+    Router --> AuditMod
+    Router --> ExportMod
+    
+    AuthMod --> PrismaORM
+    GoalMod --> PrismaORM
+    CheckinMod --> PrismaORM
+    AnalyticsMod --> PrismaORM
+    AuditMod --> PrismaORM
+    
+    GoalMod -.->|Emit Event| EventBus
+    CheckinMod -.->|Emit Event| EventBus
+    
+    EventBus --> Resend
+    EventBus --> MSTeams
+    EventBus --> PrismaORM
+    
+    EscalationJob <--> Redis
+    EscalationJob --> PrismaORM
+    EscalationJob -.->|Emit Alert| EventBus
+    
+    PrismaORM <--> PostgreSQL
+    
+    Frontend <--> UIPackage
+    Zustand <--> ReactQuery
+```
+
 
 # 🌐 Demo Credentials
 
