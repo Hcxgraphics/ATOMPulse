@@ -166,6 +166,10 @@ export default function CheckinsPage() {
                 <label className="text-sm">Actual<input type="number" className="field mt-2 w-full" defaultValue={actual ?? ""} disabled={!windowOpen || submitted} onBlur={(e) => saveCheckin(goal, { actualValue: e.target.value === "" ? null : Number(e.target.value) })} /></label>
                 <label className="text-sm">Status <InfoTooltip label="Check-in status help" content="Not Started means the goal has no update yet, On Track indicates the quarter is progressing normally, and Completed means the actual value meets the expected outcome." /><select className="field mt-2 w-full" value={checkin?.status || "NOT_STARTED"} disabled={!windowOpen || submitted} onChange={(e) => saveCheckin(goal, { status: e.target.value })}><option value="NOT_STARTED">Not Started</option><option value="ON_TRACK">On Track</option><option value="COMPLETED">Completed</option></select></label>
               </div>
+              <div className="mt-4 pt-4 border-t border-border/50">
+                <div className="text-xs font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-2 mb-2"><span className="h-3 w-3"><CheckIcon /></span> Related tasks this quarter</div>
+                <div className="text-xs text-muted-foreground">Operational tasks linked to this goal help you break down work into executable items. Track progress on the Team Overview page.</div>
+              </div>
             </Panel>
           );
         })}

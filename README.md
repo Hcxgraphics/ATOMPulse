@@ -1,4 +1,4 @@
-<div align="center">
+<!-- <div align="center">
   <img src="https://raw.githubusercontent.com/lucide-icons/lucide/main/icons/atom.svg" alt="AtomPulse Logo" width="120" />
   <h1>AtomPulse</h1>
   <p><strong>Enterprise Performance & Goal Intelligence Platform</strong></p>
@@ -74,7 +74,7 @@ See [docs/architecture.md](./docs/architecture.md) for the detailed flow.
 
 ---
 
-## 🚀 Local Development (No Docker Required)
+## 🚀 Local Development
 
 ### Prerequisites
 - Node.js 20+ → https://nodejs.org
@@ -119,4 +119,322 @@ npm run dev
 ---
 
 ## 🛡 License
-MIT License. Created for the AtomQuest Hackathon 1.0.
+MIT License. Created for the AtomQuest Hackathon 1.0. -->
+
+
+
+<div align="center">
+
+<img src="https://raw.githubusercontent.com/lucide-icons/lucide/main/icons/atom.svg" width="120" alt="ATOMPulse Logo"/>
+
+# ATOMPULSE
+
+### Enterprise Goal Intelligence & Performance Management Platform
+
+<p align="center">
+ATOMPulse is a modern enterprise-grade workforce performance ecosystem designed for intelligent goal governance, quarterly check-ins, workflow automation, escalations, analytics, and organization-wide alignment.
+</p>
+
+<p align="center">
+Built for <strong>ATOMQUEST Hackathon 1.0</strong>
+</p>
+
+<br/>
+
+[![Next.js](https://img.shields.io/badge/Next.js-14-black?style=for-the-badge\&logo=next.js)](https://nextjs.org/)
+[![Express.js](https://img.shields.io/badge/Express-4.x-white?style=for-the-badge\&logo=express)](https://expressjs.com/)
+[![PostgreSQL](https://img.shields.io/badge/PostgreSQL-15-336791?style=for-the-badge\&logo=postgresql\&logoColor=white)](https://postgresql.org)
+[![Prisma](https://img.shields.io/badge/Prisma-5-2D3748?style=for-the-badge\&logo=prisma\&logoColor=white)](https://prisma.io)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5-3178C6?style=for-the-badge\&logo=typescript\&logoColor=white)](https://typescriptlang.org)
+[![Redis](https://img.shields.io/badge/Redis-7-red?style=for-the-badge\&logo=redis\&logoColor=white)](https://redis.io/)
+[![TailwindCSS](https://img.shields.io/badge/TailwindCSS-3-38BDF8?style=for-the-badge\&logo=tailwind-css\&logoColor=white)](https://tailwindcss.com/)
+[![License](https://img.shields.io/badge/License-MIT-green?style=for-the-badge)]()
+
+</div>
+
+---
+
+# ✨ Overview
+
+ATOMPulse is a full-stack enterprise performance platform engineered to streamline the complete employee goal lifecycle — from goal creation and approval workflows to quarterly tracking, escalations, governance, and analytics.
+
+Inspired by modern workflow tools like Jira and Trello, the platform combines intelligent workflow orchestration, role-based access control, real-time dashboards, audit governance, and event-driven architecture into a scalable enterprise ecosystem.
+
+---
+
+# 🚀 Current System Status
+
+> ATOMPulse currently implements a modular enterprise-ready architecture with active workflow integrations and governance infrastructure.
+
+## ✅ Fully Functional Modules
+
+* JWT Authentication & Role-Based Access
+* Enterprise Portal Shell
+* Dynamic Sidebar Navigation
+* Escalation Engine APIs
+* Audit Governance System
+* Real-time Admin Workflows
+* Modular Backend API Architecture
+* Monorepo Infrastructure
+* Role-aware UI Rendering
+* API-driven Escalation Management
+
+---
+
+# 🖥 Dashboard Preview
+
+> Add your dashboard screenshots below
+
+```md
+![Admin Dashboard](./docs/admin-dashboard.png)
+
+![Manager Workflow](./docs/manager-board.png)
+
+![Employee Goals](./docs/employee-goals.png)
+```
+
+---
+
+# 🧠 Enterprise Features
+
+## 🔐 Role-Based Enterprise Access (RBAC)
+
+ATOMPulse implements a structured organizational hierarchy with role-aware workflows:
+
+| Role       | Capabilities                                          |
+| ---------- | ----------------------------------------------------- |
+| Employee   | Goal creation, quarterly updates, progress tracking   |
+| Manager    | Team review workflows, approvals, feedback management |
+| Admin / HR | Governance, escalations, analytics, audit visibility  |
+
+---
+
+## 📌 Goal Lifecycle Management
+
+* Draft → Submitted → Approved → Locked workflow
+* Weightage validation engine
+* Goal locking & governance
+* Shared organizational goals
+* Quarterly progress tracking
+* Planned vs Actual achievement workflows
+
+---
+
+## ⚡ Workflow Automation
+
+* Jira/Trello-inspired Kanban workflows
+* Inline manager approvals
+* Escalation management engine
+* Event-driven processing architecture
+* Real-time workflow state updates
+
+---
+
+## 📊 Enterprise Analytics & Governance
+
+* Audit trail tracking
+* QoQ performance visualization
+* Completion dashboards
+* Department heatmaps
+* Goal distribution analytics
+* Manager effectiveness insights
+
+---
+
+## 🔔 Smart Notification Infrastructure
+
+* Event-driven notifications
+* Real-time activity workflows
+* Escalation reminders
+* Redis queue architecture
+* Email integration ready
+
+---
+
+# 🏗 System Architecture
+
+ATOMPulse follows a modular enterprise-grade monorepo architecture optimized for scalability, governance, and maintainability.
+
+---
+
+## ⚙ Tech Stack
+
+| Layer            | Technology                                     |
+| ---------------- | ---------------------------------------------- |
+| Frontend         | Next.js 14, TypeScript, TailwindCSS, shadcn/ui |
+| Backend          | Express.js, Node.js                            |
+| Database         | PostgreSQL + Prisma ORM                        |
+| Queue Engine     | Redis + BullMQ                                 |
+| State Management | Zustand                                        |
+| Analytics        | Recharts                                       |
+| Validation       | Zod                                            |
+| Authentication   | JWT + RBAC                                     |
+| Deployment       | Vercel / Render                                |
+
+---
+
+# 📦 Monorepo Structure
+
+```bash
+atompulse/
+│
+├── apps/
+│   ├── web/                # Next.js Frontend
+│   └── api/                # Express.js Backend
+│
+├── packages/
+│   ├── ui/                 # Shared UI Components
+│   ├── db/                 # Prisma Schema & DB Layer
+│   ├── types/              # Shared Zod Schemas
+│   └── config/             # Shared Configurations
+│
+└── infra/
+    ├── deployment/
+    ├── scripts/
+    └── docker/
+```
+
+---
+
+# 📌 Implemented Functional Workflows
+
+## ✅ Authentication System
+
+* JWT-based login
+* Zustand auth store
+* Role-aware navigation
+* Logout handling
+* Protected dashboard redirects
+
+---
+
+## ✅ Escalation Engine
+
+* Escalation fetch APIs
+* Escalate / Resolve actions
+* Status-aware workflow handling
+* API-driven admin operations
+
+---
+
+## ✅ Audit Governance System
+
+* Audit timeline rendering
+* Event statistics
+* Actor tracking
+* Refreshable activity logs
+
+---
+
+## ✅ API Infrastructure
+
+* Authentication APIs
+* Goal management APIs
+* Check-in APIs
+* Analytics APIs
+* Audit APIs
+* Escalation APIs
+
+---
+
+# 🚧 Active Workflow Integrations
+
+The following enterprise workflows are currently being integrated with backend services:
+
+* Goal Sheet Submission Flow
+* Quarterly Check-in Engine
+* Manager Review Workflows
+* Analytics Data Binding
+* Notification Center
+* Search Infrastructure
+* XLSX Export Engine
+* Shared Goal Synchronization
+
+---
+
+# 🌐 Demo Credentials
+
+### Shared Password
+
+```bash
+AtomPulse@2025
+```
+
+| Role       | Email                                                   |
+| ---------- | ------------------------------------------------------- |
+| Employee   | [employee@atompulse.com](mailto:employee@atompulse.com) |
+| Manager    | [manager@atompulse.com](mailto:manager@atompulse.com)   |
+| Admin / HR | [admin@atompulse.com](mailto:admin@atompulse.com)       |
+
+---
+
+# 🚀 Local Development Setup
+
+## Prerequisites
+
+* Node.js 20+
+* PostgreSQL 15+
+* Redis 7+
+
+---
+
+## Installation
+
+```bash
+# Clone repository
+git clone https://github.com/Hcxgraphics/ATOMPulse.git
+
+# Navigate into project
+cd ATOMPulse
+
+# Install dependencies
+npm install
+
+# Configure environment variables
+cp apps/api/.env.example apps/api/.env
+cp apps/web/.env.example apps/web/.env.local
+
+# Run Prisma migrations
+npm run db:migrate
+
+# Seed demo data
+npm run db:seed
+
+# Start development environment
+npm run dev
+```
+
+---
+
+# 🌍 Local Access
+
+| Service       | URL                   |
+| ------------- | --------------------- |
+| Frontend      | http://localhost:3000 |
+| Backend API   | http://localhost:4000 |
+| Prisma Studio | http://localhost:5555 |
+
+---
+
+# 🔮 Future Roadmap
+
+* Microsoft Entra ID (Azure AD)
+* Teams Adaptive Notifications
+* Google Meet Scheduling
+* Predictive Performance Analytics
+* AI-driven Goal Recommendations
+* Real-time Collaboration Layer
+
+---
+
+# 👨‍💻 Built For
+
+### ATOMQUEST Hackathon 1.0
+
+Enterprise Goal Intelligence & Workforce Governance Challenge
+
+---
+
+# 📄 License
+
+MIT License © 2026 ATOMPulse

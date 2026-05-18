@@ -3,6 +3,7 @@
 
 import React from "react";
 import { PageHeader, Panel, Pill, StatCard, UsersIcon } from "@/components/ui-shell";
+import { TeamTasksBoard } from "@/components/team-tasks-board";
 import apiClient, { getApiErrorMessage } from "@/lib/apiClient";
 import { useRequireAuth } from "@/hooks/useRequireAuth";
 
@@ -13,7 +14,7 @@ export default function TeamOverviewPage() {
   useRequireAuth(["MANAGER_L1", "ADMIN_HR", "SUPER_ADMIN"]);
   const [sheets, setSheets] = React.useState<Sheet[]>([]);
   const [reviewSheet, setReviewSheet] = React.useState<Sheet | null>(null);
-  const [tab, setTab] = React.useState<"sheets" | "checkins">("sheets");
+  const [tab, setTab] = React.useState<"sheets" | "checkins" | "tasks">("sheets");
   const [checkins, setCheckins] = React.useState<any[]>([]);
   const [feedback, setFeedback] = React.useState<Record<string, string>>({});
   const [message, setMessage] = React.useState<string | null>(null);
@@ -120,6 +121,7 @@ export default function TeamOverviewPage() {
       <div className="mb-4 flex gap-2">
         <button className={`btn ${tab === "sheets" ? "btn-primary" : "btn-secondary"}`} onClick={() => setTab("sheets")}>Goal Sheets</button>
         <button className={`btn ${tab === "checkins" ? "btn-primary" : "btn-secondary"}`} onClick={() => setTab("checkins")}>Check-in Reviews</button>
+        <button className={`btn ${tab === "tasks" ? "btn-primary" : "btn-secondary"}`} onClick={() => setTab("tasks")}>Operational Tasks</button>
       </div>
 
       {tab === "sheets" ? (
@@ -156,13 +158,22 @@ export default function TeamOverviewPage() {
             })}
           </div>
         </>
-      ) : (
+      ) : tab === "checkins" ? (
         <Panel>
           <div className="table-shell">
             <table><thead><tr><th>Employee</th><th>Goal</th><th>Planned</th><th>Actual</th><th>Progress</th><th>Status</th><th>Feedback</th></tr></thead>
               <tbody>{checkins.map((item) => <tr key={item.id}><td>{item.goal.goalSheet.employee.name}</td><td>{item.goal.title}</td><td>{item.plannedValue}</td><td>{item.actualValue ?? "-"}</td><td>{Math.round(item.progressScore || 0)}%</td><td><Pill tone={item.status === "COMPLETED" ? "success" : "warning"}>{item.status}</Pill></td><td><textarea className="field min-w-48" rows={2} value={feedback[item.id] || ""} onChange={(e) => setFeedback({ ...feedback, [item.id]: e.target.value })} /><button className="btn btn-secondary mt-2 min-h-8 px-2 text-xs" onClick={() => saveFeedback(item)}>Save</button></td></tr>)}</tbody>
             </table>
           </div>
+        </Panel>
+      ) : (
+        <Panel>
+          <div className="mb-4">
+            <div className="text-xs font-semibold uppercase tracking-[0.22em] text-muted-foreground">Team operational workflow</div>
+            <h3 className="mt-2 text-lg font-semibold">Delivery task lifecycle</h3>
+            <p className="mt-1 max-w-2xl text-sm text-muted-foreground">Monitor team member task assignments, progress, and lifecycle transitions. Drag cards between columns to update workflow state.</p>
+          </div>
+          <TeamTasksBoard />
         </Panel>
       )}
 

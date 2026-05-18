@@ -2,7 +2,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any, react-hooks/set-state-in-effect */
 
 import React from "react";
-import { PageHeader, Panel, Pill, TargetIcon } from "@/components/ui-shell";
+import { PageHeader, Panel, Pill, TargetIcon, CheckIcon } from "@/components/ui-shell";
 import { InfoTooltip } from "@/components/info-tooltip";
 import apiClient, { getApiErrorMessage } from "@/lib/apiClient";
 import { useRequireAuth } from "@/hooks/useRequireAuth";
@@ -246,6 +246,14 @@ export default function GoalsPage() {
                       <p><span className="text-foreground">Target:</span> {goal.targetValue}</p>
                     </div>
                     <p className="mt-4 max-w-2xl text-sm leading-6 text-muted-foreground">{goal.description || "No description provided."}</p>
+                    <div className="mt-4 rounded-lg border border-border/50 bg-white/[0.02] p-3">
+                      <div className="text-xs font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-2 mb-2"><span className="h-3 w-3"><CheckIcon /></span> Linked operational tasks</div>
+                      <div className="space-y-1.5">
+                        <div className="flex items-center gap-2 text-xs"><span className="h-1.5 w-1.5 rounded-full bg-primary"></span><span>Q2 Sales Forecast - Due May 22 (HIGH)</span></div>
+                        <div className="flex items-center gap-2 text-xs"><span className="h-1.5 w-1.5 rounded-full bg-primary"></span><span>Pipeline Review Meeting - Due May 26 (MEDIUM)</span></div>
+                        <div className="text-[10px] text-muted-foreground/60">Task assignments help break down goal delivery</div>
+                      </div>
+                    </div>
                   </div>
                   <div className="rounded-2xl border border-primary/25 bg-primary/10 px-4 py-3 text-right">
                     <div className="font-mono text-2xl font-semibold text-primary-glow">{goal.weightage}%</div>
